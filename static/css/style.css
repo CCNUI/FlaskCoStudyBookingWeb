@@ -1,0 +1,354 @@
+/* /static/css/style.css */
+/* --- 全局与布局 --- */
+:root {
+    --primary-color: #007bff;
+    --primary-hover-color: #0056b3;
+    --danger-color: #dc3545;
+    --danger-hover-color: #c82333;
+    --special-date-bg: #fff3cd;
+    --border-color: #dee2e6;
+    --background-color: #f8f9fa;
+    --text-color: #333;
+    --header-bg: #ffffff;
+    --footer-bg: #343a40;
+    --footer-text: #f8f9fa;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    margin: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container {
+    width: 95%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+header {
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+}
+
+header nav a {
+    margin-left: 1.5rem;
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+header nav a:hover {
+    text-decoration: underline;
+}
+
+main {
+    flex-grow: 1;
+    padding: 2rem 0;
+}
+
+footer {
+    background: var(--footer-bg);
+    color: var(--footer-text);
+    padding: 1.5rem 0;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* --- 按钮样式 --- */
+.button, .button-primary, .button-danger, .button-danger-small {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+}
+.button-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+.button-primary:hover {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
+}
+.button {
+    background-color: #6c757d;
+    color: white;
+}
+.button:hover {
+    background-color: #5a6268;
+}
+.button-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+.button-danger:hover {
+    background-color: var(--danger-hover-color);
+}
+.button-danger-small {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    background-color: var(--danger-color);
+    color: white;
+}
+.button-danger-small:hover {
+    background-color: var(--danger-hover-color);
+}
+
+
+/* --- 欢迎页 --- */
+.welcome-container {
+    text-align: center;
+    padding: 4rem 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+.welcome-container h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+.welcome-container p {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+.welcome-container .button-primary {
+    font-size: 1.2rem;
+    padding: 0.8rem 2rem;
+}
+
+/* --- 日历视图 --- */
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.navigation a {
+    margin-left: 0.5rem;
+}
+
+.schedule-grid-container {
+    overflow-x: auto;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+.schedule-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.schedule-grid th, .schedule-grid td {
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
+    text-align: center;
+    min-width: 120px;
+    font-size: 0.9rem;
+}
+.schedule-grid thead th {
+    background-color: #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.schedule-grid .time-header {
+    min-width: 100px;
+}
+.schedule-grid .time-slot-label {
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+.schedule-grid tbody td {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    height: 40px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.schedule-grid tbody td:hover {
+    background-color: #e2e6ea;
+}
+.schedule-grid tbody td[data-user]:not([data-user=""]) {
+    background-color: #cce5ff;
+    font-weight: bold;
+    color: #004085;
+}
+.special-date {
+    background-color: var(--special-date-bg) !important;
+}
+.special-date-tag {
+    font-weight: bold;
+    color: #856404;
+    font-size: 0.8em;
+}
+
+/* --- 表格和列表 --- */
+.table-container {
+    overflow-x: auto;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+table th, table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+table thead th {
+    background-color: #e9ecef;
+}
+table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+.item-list {
+    list-style: none;
+    padding: 0;
+}
+.item-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.item-list li:last-child {
+    border-bottom: none;
+}
+
+/* --- 模态框 --- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 2rem;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+.close-button:hover, .close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+.modal-message {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    display: none;
+}
+.modal-message.success { background-color: #d4edda; color: #155724; }
+.modal-message.error { background-color: #f8d7da; color: #721c24; }
+.modal-message.info { background-color: #d1ecf1; color: #0c5460; }
+
+
+/* --- 表单 --- */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="date"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+.inline-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+.admin-login, .admin-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+.error-message {
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+/* --- 响应式设计 --- */
+@media (max-width: 768px) {
+    header .container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    header nav {
+        width: 100%;
+        text-align: center;
+    }
+    header nav a {
+        margin: 0 0.5rem;
+    }
+    .schedule-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .modal-content {
+        width: 90%;
+        margin: 20% auto;
+    }
+}

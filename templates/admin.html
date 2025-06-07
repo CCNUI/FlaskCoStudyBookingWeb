@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}管理员后台 - {{ super() }}{% endblock %}
+
+{% block content %}
+<h2>管理员后台</h2>
+
+{% if login_required %}
+    <div class="admin-login">
+        <h3>管理员登录</h3>
+        <form method="post" action="{{ url_for('admin_login') }}">
+            <div class="form-group">
+                <label for="password">密码:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            {% if error %}
+                <p class="error-message">{{ error }}</p>
+            {% endif %}
+            <button type="submit" class="button-primary">登录</button>
+        </form>
+    </div>
+{% else %}
+    <p>欢迎, 管理员！<a href="{{ url_for('admin_logout') }}" style="float:right;">退出登录</a></p>
+
+    <div class="admin-section">
+        <h3>管理特殊日期 ({{ special_date_name }})</h3>
+        <p>在此处添加的日期将在预约日历上以特殊样式高亮显示。</p>
+        <form method="post" class="inline-form">
+            <div class="form-group">
+                <label for="add_date">添加新{{ special_date_name }}日期:</label>
+                <input type="date" id="add_date" name="add_date" required>
+            </div>
+            <button type="submit" class="button">添加</button>
+        </form>
+    </div>
+
+    <div class="admin-section">
+        <h3>当前特殊日期列表</h3>
+        {% if special_dates %}
+        <ul class="item-list">
+            {% for s_date in special_dates %}
+            <li>
+                <span>{{ s_date }}</span>
+                <form method="post" class="inline-form">
+                    <input type="hidden" name="delete_date" value="{{ s_date }}">
+                    <button type="submit" class="button-danger-small">删除</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>当前没有设置任何特殊日期。</p>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

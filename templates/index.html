@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}预约日历 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="schedule-header">
+    <div class="date-range">
+        <h3>{{ date_range_start.strftime('%Y年%m月%d日') }} ({{ date_range_start.strftime('%A') | replace('Monday', '星期一') | replace('Tuesday', '星期二') | replace('Wednesday', '星期三') | replace('Thursday', '星期四') | replace('Friday', '星期五') | replace('Saturday', '星期六') | replace('Sunday', '星期日') }}) - {{ date_range_end.strftime('%m月%d日') }} ({{ date_range_end.strftime('%A') | replace('Monday', '星期一') | replace('Tuesday', '星期二') | replace('Wednesday', '星期三') | replace('Thursday', '星期四') | replace('Friday', '星期五') | replace('Saturday', '星期六') | replace('Sunday', '星期日') }})</h3>
+    </div>
+    <div class="navigation">
+        <a href="{{ url_for('schedule', start_date=prev_week_start_date) }}" class="button">&laquo; 上一周</a>
+        <a href="{{ url_for('schedule', start_date=today_start_date) }}" class="button">返回本周</a>
+        <a href="{{ url_for('schedule', start_date=next_week_start_date) }}" class="button">下一周 &raquo;</a>
+    </div>
+</div>
+
+<div class="schedule-grid-container">
+    <table class="schedule-grid">
+        <thead>
+            <tr>
+                <th class="time-header">时间段</th>
+                {% for day in week_dates %}
+                <th class="{% if day.isoformat() in special_dates %}special-date{% endif %}">
+                    {{ day.strftime('%m月%d日') }}<br>
+                    {{ day.strftime('%A') | replace('Monday', '星期一') | replace('Tuesday', '星期二') | replace('Wednesday', '星期三') | replace('Thursday', '星期四') | replace('Friday', '星期五') | replace('Saturday', '星期六') | replace('Sunday', '星期日') }}
+                    {% if day.isoformat() in special_dates %}
+                        <br><span class="special-date-tag">{{ special_date_name }}</span>
+                    {% endif %}
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for time_slot in time_slots %}
+            <tr>
+                <td class="time-slot-label">{{ time_slot }}</td>
+                {% for day in week_dates %}
+                {% set res_key = day.isoformat() + ':' + time_slot %}
+                <td data-date="{{ day.isoformat() }}" data-time="{{ time_slot }}" data-user="{{ reservations.get(res_key, '') }}">
+                    {{ reservations.get(res_key, '') }}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="reservationModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h3 id="modalTitle">预约详情</h3>
+        <p><strong>日期:</strong> <span id="modalDate"></span></p>
+        <p><strong>时间:</strong> <span id="modalTime"></span></p>
+        <p><strong>当前预约人:</strong> <span id="modalCurrentUser">无</span></p>
+        <form id="reservationForm">
+            <input type="hidden" id="modalDateInput" name="date">
+            <input type="hidden" id="modalTimeInput" name="time_slot">
+            <div class="form-group">
+                <label for="nameInput">您的名字:</label>
+                <input type="text" id="nameInput" name="name" placeholder="输入名字以预约或更新" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button-primary">提交</button>
+                <button type="button" id="deleteButton" class="button-danger">删除此预约</button>
+            </div>
+        </form>
+        <div id="modalMessage" class="modal-message"></div>
+    </div>
+</div>
+{% endblock %}

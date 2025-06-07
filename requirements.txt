@@ -1,0 +1,5 @@
+# /requirements.txt
+Flask
+redis
+python-dotenv
+Flask-SQLAlchemy
