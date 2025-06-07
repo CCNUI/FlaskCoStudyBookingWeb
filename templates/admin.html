@@ -3,7 +3,7 @@
 {% block title %}管理员后台 - {{ super() }}{% endblock %}
 
 {% block content %}
-<h2>管理员后台</h2>
+<h2>优智通科技共修室预约系统 - 管理员后台</h2>
 
 {% if login_required %}
     <div class="admin-login">
@@ -32,10 +32,8 @@
             </div>
             <button type="submit" class="button">添加</button>
         </form>
-    </div>
 
-    <div class="admin-section">
-        <h3>当前特殊日期列表</h3>
+        <h4>当前特殊日期列表</h4>
         {% if special_dates %}
         <ul class="item-list">
             {% for s_date in special_dates %}
@@ -52,5 +50,35 @@
         <p>当前没有设置任何特殊日期。</p>
         {% endif %}
     </div>
+
+    <div class="admin-section">
+        <h3>管理时间段</h3>
+        <p>修改将立即生效。删除时间段可能会导致历史预约记录无法在日历上显示。</p>
+        <form method="post" class="inline-form">
+            <div class="form-group">
+                <label for="add_timeslot_value">添加新时间段 (格式 HH:MM-HH:MM):</label>
+                <input type="text" id="add_timeslot_value" name="add_timeslot_value" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]" required>
+            </div>
+            <button type="submit" name="add_timeslot" class="button">添加</button>
+        </form>
+
+        <h4>当前时间段列表</h4>
+        {% if time_slots %}
+        <ul class="item-list">
+            {% for slot in time_slots %}
+            <li>
+                <span>{{ slot }}</span>
+                <form method="post" class="inline-form">
+                    <input type="hidden" name="delete_timeslot_value" value="{{ slot }}">
+                    <button type="submit" class="button-danger-small">删除</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>当前没有任何时间段。请添加！</p>
+        {% endif %}
+    </div>
+
 {% endif %}
 {% endblock %}
