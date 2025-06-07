@@ -1,4 +1,4 @@
-# /app.py (v4 - 增加修改和二次确认功能)
+# /app.py (v5 - 稳定修复版)
 
 import os
 import redis
@@ -12,14 +12,11 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key-for-development')
 
-# *** 修改点：根据您的要求更新默认时间段列表 ***
-DEFAULT_TIME_SLOTS = [
-    "06:40-07:20",
-    "06:50-07:20"
-]
+# --- 默认常量 ---
+DEFAULT_TIME_SLOTS = ["06:40-07:20", "06:50-07:20"]
 TIME_SLOTS_KEY = "config:time_slots"
 
-# --- 条件数据库配置 (无变化) ---
+# --- 条件数据库配置 ---
 kv_url = os.environ.get('KV_URL');
 db_is_redis = bool(kv_url);
 db = None
@@ -63,13 +60,14 @@ else:
     print("INFO: Application is running in SQLITE mode."); db = sql_alchemy_db
 
 
-# --- 自定义Flask CLI命令 (无变化) ---
+# --- 自定义Flask CLI命令 ---
 @app.cli.command("init-db")
 def init_db_command():
     if db_is_redis:
         print("INFO: Redis mode. No DB initialization needed.")
-        if not db.exists(TIME_SLOTS_KEY): db.rpush(TIME_SLOTS_KEY, *DEFAULT_TIME_SLOTS); print(
-            "SUCCESS: Default time slots have been set in Redis.")
+        db.delete(TIME_SLOTS_KEY)  #
+        db.rpush(TIME_SLOTS_KEY, *DEFAULT_TIME_SLOTS)
+        print("SUCCESS: Default time slots have been reset in Redis.")
         return
     with app.app_context():
         db.create_all()
@@ -79,7 +77,7 @@ def init_db_command():
     print("SUCCESS: SQLite database and tables initialized with default time slots.")
 
 
-# --- 辅助函数 & 装饰器 (无变化) ---
+# --- 辅助函数 & 装饰器 ---
 def get_time_slots():
     if db_is_redis:
         return db.lrange(TIME_SLOTS_KEY, 0, -1)
@@ -115,7 +113,7 @@ def log_action(action, date, time_slot, old_user, new_user):
         new_log = Log(**log_entry_data); db.session.add(new_log); db.session.commit()
 
 
-# --- 路由定义 (大部分无变化) ---
+# --- 路由定义 ---
 @app.route('/')
 def welcome(): return render_template('welcome.html')
 
@@ -157,7 +155,10 @@ def schedule():
 @app.route('/submit_reservation', methods=['POST'])
 @check_db_connection
 def submit_reservation():
-    data = request.get_json();
+    data = request.get_json()
+    if not all(k in data for k in ['date', 'time_slot', 'name']):
+        return jsonify({"status": "error", "message": "请求数据不完整"}), 400
+
     res_date_str = data['date']
     try:
         res_date_obj = date.fromisoformat(res_date_str)
@@ -166,43 +167,47 @@ def submit_reservation():
             {"status": "error", "message": "无法修改或预约过去的时间段！"}), 403
     except (ValueError, TypeError):
         return jsonify({"status": "error", "message": "日期格式无效"}), 400
+
     time_slot = data['time_slot'];
     new_name = data['name'].strip();
     key = f"reservation:{res_date_str}:{time_slot}";
     old_name = None;
-    action = "none";
-    message = "未知错误"
+    action = "none"
+
     if db_is_redis:
         old_name = db.get(key)
         if not new_name:
-            if old_name: db.delete(key); action, message = "delete", "预约已删除"
+            if old_name: db.delete(key); action = "delete"
         else:
-            db.set(key, new_name);
-            action = "update" if old_name else "create";
-            message = f"预约已更新为: {new_name}" if old_name else "预约成功！"
+            db.set(key, new_name); action = "update" if old_name else "create"
     else:
         old_res = Reservation.query.get(key);
         old_name = old_res.user_name if old_res else None
         if not new_name:
-            if old_res: db.session.delete(old_res); action, message = "delete", "预约已删除"
+            if old_res: db.session.delete(old_res); action = "delete"
         else:
             if old_res:
                 old_res.user_name = new_name; action = "update"
             else:
                 new_res = Reservation(id=key, user_name=new_name); db.session.add(new_res); action = "create"
-            message = f"预约已更新为: {new_name}" if old_name else "预约成功！"
         db.session.commit()
-    if action not in ["none", "error"]:
-        log_action(action, res_date_str, time_slot, old_name, new_name); return jsonify(
-            {"status": "success", "message": message, "action": action, "new_user": new_name})
+
+    if action == "create":
+        message = "预约成功！"
+    elif action == "update":
+        message = f"预约已更新为: {new_name}"
+    elif action == "delete":
+        message = "预约已删除"
     else:
         return jsonify({"status": "info", "message": "该时段无预约，无需操作", "action": "none"})
+
+    log_action(action, res_date_str, time_slot, old_name, new_name)
+    return jsonify({"status": "success", "message": message, "action": action, "new_user": new_name})
 
 
 @app.route('/logs')
 @check_db_connection
 def logs():
-    log_entries = []
     if db_is_redis:
         log_entries = [json.loads(log) for log in db.lrange('logs', 0, -1)]
     else:
@@ -215,70 +220,54 @@ def logs():
 @admin_required
 def admin():
     if request.method == 'POST':
-        # --- 特殊日期管理 ---
-        if 'add_date' in request.form or 'delete_date' in request.form:
-            date_to_add = request.form.get('add_date');
+        # 使用 if/elif/else 结构确保一次只处理一个表单提交
+        if 'add_date' in request.form:
+            date_to_add = request.form.get('add_date')
+            if db_is_redis:
+                db.sadd('special_dates', date_to_add)
+            elif not SpecialDate.query.get(date_to_add):
+                db.session.add(SpecialDate(date_str=date_to_add)); db.session.commit()
+        elif 'delete_date' in request.form:
             date_to_delete = request.form.get('delete_date')
             if db_is_redis:
-                if date_to_add: db.sadd('special_dates', date_to_add)
-                if date_to_delete: db.srem('special_dates', date_to_delete)
+                db.srem('special_dates', date_to_delete)
             else:
-                if date_to_add and not SpecialDate.query.get(date_to_add): db.session.add(
-                    SpecialDate(date_str=date_to_add))
-                if date_to_delete:
-                    date_obj = SpecialDate.query.get(date_to_delete)
-                    if date_obj: db.session.delete(date_obj)
-                db.session.commit()
-
-        # --- 时间段管理 ---
-        if 'add_timeslot' in request.form:
+                date_obj = SpecialDate.query.get(date_to_delete)
+                if date_obj: db.session.delete(date_obj); db.session.commit()
+        elif 'add_timeslot_value' in request.form:
             timeslot_to_add = request.form.get('add_timeslot_value')
             if db_is_redis:
-                if timeslot_to_add: db.rpush(TIME_SLOTS_KEY, timeslot_to_add)
+                db.rpush(TIME_SLOTS_KEY, timeslot_to_add)
             elif timeslot_to_add and not TimeSlot.query.filter_by(slot_value=timeslot_to_add).first():
                 max_order = db.session.query(db.func.max(TimeSlot.order)).scalar() or 0
                 db.session.add(TimeSlot(slot_value=timeslot_to_add, order=max_order + 1));
                 db.session.commit()
-
-        if 'delete_timeslot_value' in request.form:
+        elif 'delete_timeslot_value' in request.form:
             timeslot_to_delete = request.form.get('delete_timeslot_value')
             if db_is_redis:
-                if timeslot_to_delete: db.lrem(TIME_SLOTS_KEY, 1, timeslot_to_delete)
+                db.lrem(TIME_SLOTS_KEY, 1, timeslot_to_delete)
             else:
                 slot_obj = TimeSlot.query.filter_by(slot_value=timeslot_to_delete).first()
                 if slot_obj: db.session.delete(slot_obj); db.session.commit()
-
-        # *** 修改点：增加修改时间段的逻辑 ***
-        if 'edit_timeslot_original' in request.form:
+        elif 'edit_timeslot_original' in request.form:
             original_value = request.form.get('edit_timeslot_original')
             new_value = request.form.get('edit_timeslot_new')
             if original_value and new_value:
                 if db_is_redis:
-                    # Redis中修改值的简单方法是 LSET (按索引)，但找到索引不直观。
-                    # 更可靠的方法是: 删掉旧的，插入新的。但这会改变顺序。
-                    # 为了保持顺序，需要取出列表，修改，再整个存回去 (较复杂)。
-                    # 这里我们用一个简单但可能改变顺序的方法：
-                    db.lrem(TIME_SLOTS_KEY, 1, original_value)
-                    db.rpush(TIME_SLOTS_KEY, new_value)
-                else:  # SQLite
+                    db.lset(TIME_SLOTS_KEY, db.lrange(TIME_SLOTS_KEY, 0, -1).index(original_value), new_value)
+                else:
                     slot_obj = TimeSlot.query.filter_by(slot_value=original_value).first()
-                    if slot_obj:
-                        slot_obj.slot_value = new_value
-                        db.session.commit()
-
+                    if slot_obj: slot_obj.slot_value = new_value; db.session.commit()
         return redirect(url_for('admin'))
 
-    # --- GET请求的渲染逻辑 ---
-    slot_to_edit = request.args.get('edit_slot')  # 获取URL中要编辑的槽位
+    slot_to_edit = request.args.get('edit_slot')
     special_dates = sorted(list(db.smembers('special_dates') or set())) if db_is_redis else sorted(
         [d.date_str for d in SpecialDate.query.all()])
     time_slots = get_time_slots()
-
     return render_template('admin.html', special_dates=special_dates, time_slots=time_slots, special_date_name="斋日",
                            slot_to_edit=slot_to_edit)
 
 
-# --- admin 登录登出路由 (无变化) ---
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     admin_password = os.environ.get('ADMIN_PASSWORD');
@@ -295,4 +284,4 @@ def admin_login():
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('is_admin', None);
-    return redirect(url_for('admin_logout'))
+    return redirect(url_for('admin_login'))
