@@ -13,9 +13,7 @@
                 <label for="password">密码:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            {% if error %}
-                <p class="error-message">{{ error }}</p>
-            {% endif %}
+            {% if error %}<p class="error-message">{{ error }}</p>{% endif %}
             <button type="submit" class="button-primary">登录</button>
         </form>
     </div>
@@ -30,16 +28,15 @@
                 <label for="add_date">添加新{{ special_date_name }}日期:</label>
                 <input type="date" id="add_date" name="add_date" required>
             </div>
-            <button type="submit" class="button">添加</button>
+            <button type="submit" name="add_date_submit" class="button">添加</button>
         </form>
-
         <h4>当前特殊日期列表</h4>
         {% if special_dates %}
         <ul class="item-list">
             {% for s_date in special_dates %}
             <li>
                 <span>{{ s_date }}</span>
-                <form method="post" class="inline-form">
+                <form method="post">
                     <input type="hidden" name="delete_date" value="{{ s_date }}">
                     <button type="submit" class="button-danger-small">删除</button>
                 </form>
@@ -53,7 +50,8 @@
 
     <div class="admin-section">
         <h3>管理时间段</h3>
-        <p>修改将立即生效。删除时间段可能会导致历史预约记录无法在日历上显示。</p>
+        <p class="notice"><strong>注意：</strong> 对时间段的任何修改都会立即生效，并影响到所有日期的日历视图。删除时间段可能会导致历史预约记录无法显示。</p>
+
         <form method="post" class="inline-form">
             <div class="form-group">
                 <label for="add_timeslot_value">添加新时间段 (格式 HH:MM-HH:MM):</label>
@@ -63,22 +61,29 @@
         </form>
 
         <h4>当前时间段列表</h4>
-        {% if time_slots %}
         <ul class="item-list">
             {% for slot in time_slots %}
             <li>
-                <span>{{ slot }}</span>
-                <form method="post" class="inline-form">
-                    <input type="hidden" name="delete_timeslot_value" value="{{ slot }}">
-                    <button type="submit" class="button-danger-small">删除</button>
-                </form>
+                {% if slot == slot_to_edit %}
+                    <form method="post" class="inline-form">
+                        <input type="hidden" name="edit_timeslot_original" value="{{ slot }}">
+                        <input type="text" name="edit_timeslot_new" value="{{ slot }}" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]" required>
+                        <button type="submit" class="button-primary">保存</button>
+                        <a href="{{ url_for('admin') }}" class="button">取消</a>
+                    </form>
+                {% else %}
+                    <span>{{ slot }}</span>
+                    <div class="item-actions">
+                        <a href="{{ url_for('admin', edit_slot=slot) }}" class="button-small">修改</a>
+                        <form method="post" class="inline-form js-delete-confirm-form">
+                            <input type="hidden" name="delete_timeslot_value" value="{{ slot }}">
+                            <button type="submit" class="button-danger-small">删除</button>
+                        </form>
+                    </div>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>
-        {% else %}
-        <p>当前没有任何时间段。请添加！</p>
-        {% endif %}
     </div>
-
 {% endif %}
 {% endblock %}
