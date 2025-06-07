@@ -3,6 +3,8 @@
 {% block title %}预约日历 - {{ super() }}{% endblock %}
 
 {% block content %}
+<h2>共修室预约系统</h2>
+
 <div class="schedule-header">
     <div class="date-range">
         <h3>{{ date_range_start.strftime('%Y年%m月%d日') }} ({{ date_range_start.strftime('%A') | replace('Monday', '星期一') | replace('Tuesday', '星期二') | replace('Wednesday', '星期三') | replace('Thursday', '星期四') | replace('Friday', '星期五') | replace('Saturday', '星期六') | replace('Sunday', '星期日') }}) - {{ date_range_end.strftime('%m月%d日') }} ({{ date_range_end.strftime('%A') | replace('Monday', '星期一') | replace('Tuesday', '星期二') | replace('Wednesday', '星期三') | replace('Thursday', '星期四') | replace('Friday', '星期五') | replace('Saturday', '星期六') | replace('Sunday', '星期日') }})</h3>
