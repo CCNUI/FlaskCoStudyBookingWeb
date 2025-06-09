@@ -1,0 +1,10 @@
+venv/
+
+# SQLite 数据库实例文件夹
+instance/
+# Python 缓存
+__pycache__/ *.pyc
+# IDE 配置文件夹
+.idea/
+# 环境变量文件
+.env
